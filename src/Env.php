@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace mjfklib\Container;
 
+use mjfklib\Utils\ArrayValue;
 use Symfony\Component\Dotenv\Dotenv;
 
 /** @extends \ArrayObject<string,string> */
@@ -94,7 +95,7 @@ class Env extends \ArrayObject
             (new Dotenv())->loadEnv($appDirEnv . "/.env");
         }
 
-        return ArrayValue::getStringArray($_ENV);
+        return ArrayValue::convertToStringArray($_ENV);
     }
 
 
@@ -217,9 +218,9 @@ class Env extends \ArrayObject
         string $name,
         array|object $defaultValues = []
     ): array {
-        return ArrayValue::getStringArray(
-            $this[$name] ?? null,
-            $defaultValues
+        return array_merge(
+            ArrayValue::convertToStringArray($this[$name] ?? []),
+            ArrayValue::convertToStringArray($defaultValues)
         );
     }
 }

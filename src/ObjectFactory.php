@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace mjfklib\Container;
 
+use mjfklib\Utils\ArrayValue;
+
 final class ObjectFactory
 {
     /**
@@ -19,17 +21,16 @@ final class ObjectFactory
         callable $construct
     ): mixed {
         try {
-            if (is_object($values)) {
-                if (is_a($values, $className, false)) {
-                    return $values;
-                }
-                $values = get_object_vars($values);
-            } elseif (!is_array($values)) {
-                $values = ['values' => $values];
-            }
-            return $construct($values);
+            return is_object($values) && is_a($values, $className, false)
+                ? $values
+                : $construct(
+                    ArrayValue::convertToArray($values)
+                );
         } catch (\Throwable $t) {
-            throw new \RuntimeException("Error creating instance: {$className}}", 0, $t);
+            throw new \RuntimeException(
+                message: "Error creating instance: {$className}}",
+                previous: $t
+            );
         }
     }
 }
