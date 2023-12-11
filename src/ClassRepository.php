@@ -64,27 +64,33 @@ class ClassRepository
         string $appDir,
         string $appNamespace
     ) {
-        $this->classes = $this->findClasses($appDir . '/src', $appNamespace);
+        $srcDir = $appDir . '/src';
+        if (!is_dir($srcDir)) {
+            throw new \RuntimeException("Not a directory: {$srcDir}");
+        }
+        if ($appNamespace === '') {
+            throw new \RuntimeException("Missing application namespace");
+        }
+
+        $this->classes = $this->findClasses(
+            $srcDir,
+            $appNamespace
+        );
     }
 
 
     /**
-     * @param string $appNamespace
      * @param string $srcDir
+     * @param string $appNamespace
      * @return array<string,\ReflectionClass<object>>
      */
     protected function findClasses(
         string $srcDir,
         string $appNamespace
     ): array {
-        if ($appNamespace === '') {
-            throw new \RuntimeException("Missing application namespace");
-        }
-        if (!is_dir($srcDir)) {
-            throw new \RuntimeException("Not a directory: {$srcDir}");
-        }
-
         $classes = [];
+
+        /** @var \Iterator<int|string,string[]> */
         $files = new \RegexIterator(
             new \RecursiveIteratorIterator(
                 new \RecursiveDirectoryIterator($srcDir)
@@ -94,41 +100,14 @@ class ClassRepository
         );
 
         foreach ($files as $file) {
-            try {
-                /** @var string[] $file */
-                $filePath = array_shift($file) ?? '';
-                /** @var class-string<object> $className */
-                $className = $appNamespace . str_replace('/', '\\', substr($filePath, strlen($srcDir), -4));
-                $refClass = new \ReflectionClass($className);
-                $classes[$refClass->getName()] = $refClass;
-            } catch (\ReflectionException) {
-            }
+            $fileName = array_shift($file) ?? '';
+            $className = $appNamespace . str_replace('/', '\\', substr($fileName, strlen($srcDir), -4));
+            $classes[$className] = class_exists($className)
+                ? new \ReflectionClass($className)
+                : throw new \ReflectionException("Class not found: {$className}");
         }
 
         return $classes;
-    }
-
-
-    /**
-     * Returns instance of \ReflectionClass for the given file path
-     *
-     * @param string $appNamespace
-     * @param string $srcDir
-     * @param string $filePath
-     * @return \ReflectionClass<object>|null
-     */
-    protected function getReflectionClass(
-        string $appNamespace,
-        string $srcDir,
-        string $filePath
-    ): \ReflectionClass|null {
-        try {
-            /** @var class-string<object> $className */
-            $className = $appNamespace . str_replace('/', '\\', substr($filePath, strlen($srcDir), -4));
-            return new \ReflectionClass($className);
-        } catch (\ReflectionException) {
-            return null;
-        }
     }
 
 
