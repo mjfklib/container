@@ -102,7 +102,7 @@ class ClassRepository
         foreach ($files as $file) {
             $fileName = array_shift($file) ?? '';
             $className = $appNamespace . str_replace('/', '\\', substr($fileName, strlen($srcDir), -4));
-            $classes[$className] = class_exists($className)
+            $classes[$className] = class_exists($className) || interface_exists($className)
                 ? new \ReflectionClass($className)
                 : throw new \ReflectionException("Class not found: {$className}");
         }
